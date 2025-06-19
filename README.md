@@ -6,7 +6,7 @@ oc login ...
 ## Create a new project
 oc new-project lgim-eap
 
-## Create image from Dockerfile (requiere access to registry.redhat.io)
+## Create image from Dockerfile (access to registry.redhat.io is required)
 ```shell
 oc new-build --name=helloworld-eap-lgim --strategy=docker --binary --to=helloworld-eap-lgim:1.0
 ```
@@ -230,7 +230,6 @@ Modify app Deployment to add a reference to ConfigMap and Secret previously crea
             name: postgresql
             key: database-name
 
-```yaml
-
+```
 
 DB_CONNECTION_STRING="jdbc:postgresql://${DB_SERVICE_HOST}:${DB_SERVICE_PORT}/${DB_NAME}"
