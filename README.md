@@ -17,7 +17,7 @@ NAME                          TYPE     FROM         LATEST
 helloworld-eap-lgim           Docker   Binary       2
 ```
 
-# Subir contenido del contexto de build
+## Launch start-build with local folder (--from-dir=.) as reference
 ```shell
 oc start-build helloworld-eap-lgim --from-dir=. --follow
 
@@ -65,7 +65,7 @@ NAME                    IMAGE REPOSITORY                                        
 helloworld-eap-lgim     image-registry.openshift-image-registry.svc:5000/lgim-eap/helloworld-eap-lgim           1.0      13 minutes ago
 ```
 
-# Crear una app desde la imagen recién construida
+## Create an app with the built image recently
 ```shell
 oc new-app helloworld-eap-lgim:1.0
 
@@ -88,7 +88,7 @@ OUTPUT:
     Run 'oc status' to view your app.
 ```
 
-# Expose the service with a Route
+## Expose the service with a Route
 ```shell
 oc expose svc/helloworld-eap-lgim
 
@@ -96,7 +96,7 @@ OUTPUT:
 route.route.openshift.io/helloworld-eap-lgim exposed
 ```
 
-Verification
+## Verification
 ```shell
 oc get all -l app=helloworld-eap-lgim
 
@@ -126,3 +126,111 @@ OUTPUT:
 <html><head><title>Error</title></head><body>Internal Server Error</body></html>
 ```
 
+Second curl command fails due to security questions.
+
+# Database integration
+
+## First of all deploy a Postgresql (Ephemeral) DB fromm Openshift catalog.
+
+## Get connection data from Secret 'postgreql':
+
+database-name=sampledb
+database-user=userYCR
+database-password=22bvaR2dfuHW5weG
+
+Connection string:
+postgresql://<user>:<password>@<host>:<port>/<database>
+
+postgresql://userYCR:22bvaR2dfuHW5weG@postgresql.lgim-eap.svc.cluster.local:5432/sampledb
+
+JDBC: jdbc:postgresql://${DB_SERVICE_HOST}:${DB_SERVICE_PORT}/${DB_NAME}
+
+## Testing conecction from a pod with 'psql' tool:
+```shell
+psql -h postgresql -U userYCR -d sampledb
+
+OUTPUT:
+sh-4.4$ psql -h postgresql -U userYCR -d sampledb
+Password for user userYCR: 
+psql (10.23)
+Type "help" for help.
+
+sampledb=> 
+```
+
+## Create an example table
+```shell
+sampledb=> CREATE TABLE hello (
+  id SERIAL PRIMARY KEY,
+  service TEXT,
+  response TEXT
+);
+
+
+OUTPUT:
+sampledb=> CREATE TABLE hello (
+sampledb(>   id SERIAL PRIMARY KEY,
+sampledb(>   service TEXT,
+sampledb(>   response TEXT
+sampledb(> );
+CREATE TABLE
+```
+
+## Insert some data in the new table
+```shell
+INSERT INTO hello (service, response)
+VALUES ('public', 'Hello from PUBLIC service!'), ('secure', 'Hello from SECURE service!');
+
+SELECT * FROM hello;
+
+OUTPUT:
+sampledb=> SELECT * FROM hello;
+ id | service |          response          
+----+---------+----------------------------
+  1 | public  | Hello from PUBLIC service!
+  2 | secure  | Hello from SECURE service!
+(2 rows)
+```
+
+IMPORTANT: Remember you have an Postgresql EPHEMERAL instance. So, if the POD is restarted, YOU WILL LOSE THAT DATA.
+
+
+## OCP objects to integrate the database
+Create objects with DB connection string:
+
+```shell
+oc apply -f 00.configure-datasource.yaml
+
+configmap/eap-datasource-config created
+```
+
+Create objects with DB cr   edentials:
+```shell
+oc apply -f 01.database-credentials.yaml 
+
+secret/db-secret created
+```
+
+Modify app Deployment to add a reference to ConfigMap and Secret previously created:
+```yaml
+    env:
+    - name: POSTGRESQL_USER
+        valueFrom:
+        secretKeyRef:
+            name: db-secret
+            key: DB_USER
+    - name: POSTGRESQL_PASSWORD
+        valueFrom:
+        secretKeyRef:
+            name: db-secret
+            key: DB_PASSWORD
+    - name: POSTGRESQL_DATABASE
+        valueFrom:
+        secretKeyRef:
+            name: postgresql
+            key: database-name
+
+```yaml
+
+
+DB_CONNECTION_STRING="jdbc:postgresql://${DB_SERVICE_HOST}:${DB_SERVICE_PORT}/${DB_NAME}"

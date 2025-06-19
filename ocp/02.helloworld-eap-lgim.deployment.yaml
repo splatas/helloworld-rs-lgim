@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"helloworld-eap-lgim:1.0","namespace":"lgim-eap"},"fieldPath":"spec.template.spec.containers[?(@.name==\"helloworld-eap-lgim\")].image","paused":"true"}]'
+  labels:
+    app: helloworld-eap-lgim
+    app.kubernetes.io/component: helloworld-eap-lgim
+    app.kubernetes.io/instance: helloworld-eap-lgim
+  name: helloworld-eap-lgim
+  namespace: lgim-eap
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      deployment: helloworld-eap-lgim
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: OpenShiftNewApp
+      creationTimestamp: null
+      labels:
+        deployment: helloworld-eap-lgim
+    spec:
+      containers:
+      - image: image-registry.openshift-image-registry.svc:5000/lgim-eap/helloworld-eap-lgim@sha256:068b549eaf553f487c9d52eb4af5f35f385ef26d71d6b3b2127653b1e98e20e5
+        imagePullPolicy: IfNotPresent
+        name: helloworld-eap-lgim
+        volumeMounts:
+        - name: cli-config
+          mountPath: /opt/eap/extensions/configure-ds.cli
+          subPath: configure-ds.cli
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        - containerPort: 8443
+          protocol: TCP
+        - containerPort: 8778
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: cli-config
+        configMap:
+          name: eap-datasource-config

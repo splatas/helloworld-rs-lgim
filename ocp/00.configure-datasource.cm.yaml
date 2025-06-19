@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eap-datasource-config
+  namespace: lgim-eap
+data:
+  configure-ds.cli: |
+    embed-server --std-out=echo
+
+    # Delete Example datasource
+    # /subsystem=datasources/data-source=ExampleDS:remove()
+
+    # Add PostgreSQL driver 
+    /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql, driver-module-name=org.postgresql, driver-class-name=org.postgresql.Driver)
+
+    # Add new datasource
+    /subsystem=datasources/data-source=PostgresDS:add(
+        name=PostgresDS,
+        jndi-name=java:/jdbc/PostgresDS,
+        driver-name=postgresql,
+        connection-url=jdbc:postgresql://postgresql.lgim-eap.svc.cluster.local:5432/sampledb,
+        user-name=${DB_USER},
+        password=${DB_PASSWORD},
+        use-ccm=true,
+        max-pool-size=20,
+        blocking-timeout-wait-millis=5000,
+        enabled=true
+    )
+
+    stop-embedded-server
