@@ -5,7 +5,7 @@ metadata:
   namespace: lgim-eap
 data:
   configure-ds.cli: |
-    #embed-server --std-out=echo --server-config=standalone-openshift.xml
+    embed-server --server-config=standalone-openshift.xml --std-out=echo 
 
     batch
     set DB_DRIVER_NAME=postgresql
@@ -40,7 +40,8 @@ data:
         use-ccm=true,max-pool-size=20,blocking-timeout-wait-millis=5000,enabled=true \
     )
 
-    #stop-embedded-server
     run-batch
 
     quit
+    
+    stop-embedded-server

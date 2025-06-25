@@ -8,14 +8,8 @@ USER 0
 COPY ./target/helloworld-rs-lgim.war /opt/eap/standalone/deployments/
 
 # DATABASE Drivers --------------------------------------------
-# JBOSS_HOME/
-# └── modules/
-#     └── org/
-#         └── postgresql/
-#             └── main/
-# COPY ./drivers/postgresql-42.7.7.jar /opt/eap/modules/org/postgresql/main/postgresql-42.7.7.jar
+# Configured in deployment with ConfigMap 'eap-datasource-config'
 COPY ./drivers/postgresql-42.7.7.jar /opt/eap/drivers/postgresql-42.7.7.jar
-# COPY ./drivers/module.xml /opt/eap/modules/org/postgresql/main/module.xml
 # DATABASE Drivers --------------------------------------------
 
 # Permissions needed for no-root users in OpenShift can access
