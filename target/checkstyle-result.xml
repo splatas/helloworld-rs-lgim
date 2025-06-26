@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<checkstyle version="8.5">
-<file name="/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim/src/main/java/org/jboss/as/quickstarts/rshelloworld/HelloWorld.java">
-</file>
-<file name="/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim/src/main/java/org/jboss/as/quickstarts/rshelloworld/RestApplication.java">
-</file>
-</checkstyle>

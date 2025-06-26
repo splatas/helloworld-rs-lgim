@@ -1,2 +1,4 @@
-/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim/src/main/java/org/jboss/as/quickstarts/rshelloworld/HelloWorld.java
-/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim/src/main/java/org/jboss/as/quickstarts/rshelloworld/RestApplication.java
+/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim_BACKUP/src/main/java/org/jboss/as/quickstarts/rshelloworld/model/Hello.java
+/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim_BACKUP/src/main/java/org/jboss/as/quickstarts/rshelloworld/service/HelloService.java
+/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim_BACKUP/src/main/java/org/jboss/as/quickstarts/rshelloworld/RestApplication.java
+/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim_BACKUP/src/main/java/org/jboss/as/quickstarts/rshelloworld/HelloWorld.java

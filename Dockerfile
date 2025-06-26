@@ -20,5 +20,5 @@ RUN chown -R jboss:root /opt/eap/standalone/deployments && chmod -R g+rw /opt/ea
 # RUN chmod +x /opt/eap/bin/openshift-launch.sh
 # DATABASE Drivers --------------------------------------------    
 
-ENV splatas=basic-2
+ENV splatas=basic-with-helloworldPU
 USER 185

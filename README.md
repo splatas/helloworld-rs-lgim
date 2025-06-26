@@ -269,6 +269,25 @@ h2
 postgresql   (<= your DB driver)
 ```
 
+
+# Build app
+```shell
+mvn clean install -Dcheckstyle.skip=true
+```
+
+New BuildConfig and ImageStream:
+```shell
+oc apply -f ocp/11.helloworld-eap-lgim-db.bc.yaml 
+buildconfig.build.openshift.io/helloworld-eap-lgim-db created
+
+oc apply -f ocp/11.helloworld-eap-lgim-db.is.yaml 
+imagestream.image.openshift.io/helloworld-eap-lgim-db created
+```
+
+```shell
+oc start-build helloworld-eap-lgim-db --from-dir=. --follow
+```
+
 --------------------------------
 REVISAR!!!
     Modify app Deployment to add a reference to ConfigMap and Secret previously created:

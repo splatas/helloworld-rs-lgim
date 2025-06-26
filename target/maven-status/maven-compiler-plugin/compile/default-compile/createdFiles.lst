@@ -1,2 +1,3 @@
 org/jboss/as/quickstarts/rshelloworld/HelloWorld.class
 RestApplication.class
+org/jboss/as/quickstarts/rshelloworld/model/Hello.class

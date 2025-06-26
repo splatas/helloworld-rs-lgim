@@ -29,40 +29,20 @@ import javax.ws.rs.core.SecurityContext;
 // import javax.ws.rs.ApplicationPath;
 // import javax.ws.rs.core.Application;
 
-/**
- * A simple REST service which is able to say hello to someone using HelloService Please take a look at the web.xml where JAX-RS
- * is enabled
- *
- * @author gbrey@redhat.com
- *
- */
+import org.jboss.as.quickstarts.rshelloworld.model.Hello;
+// import javax.ejb.Stateless;
+import javax.persistence.*;
+import java.util.Optional;
+
 @Path("/")
 public class HelloWorld {
-// @ApplicationPath("/")
-// public class HelloWorld extends Application{
-    // @Inject
-    // HelloService helloService;
-
-    // @GET
-    // @Path("/json")
-    // @Produces({ "application/json" })
-    // public String getHelloWorldJSON() {
-    //     return "{\"result\":\"" + helloService.createHelloMessage("World") + "\"}";
-    // }
-
-    // @GET
-    // @Path("/xml")
-    // @Produces({ "application/xml" })
-    // public String getHelloWorldXML() {
-    //     return "<xml><result>" + helloService.createHelloMessage("World") + "</result></xml>";
-    // }
 
     // ----------------------------- //
     @GET
     @Path("/public")
     @Produces(MediaType.TEXT_PLAIN)
     public String publicEndpoint() {
-      return "public";
+      return getGreeting("public");
     }
 
     @GET
@@ -70,6 +50,24 @@ public class HelloWorld {
     @Produces(MediaType.TEXT_PLAIN)
     @RolesAllowed("USER")
     public String secureEndpoint(@Context SecurityContext ctx) {
-      return "user=" + ctx.getUserPrincipal().getName();
+      // return "user=" + ctx.getUserPrincipal().getName();
+      return getGreeting("secure");
+    }
+
+    @PersistenceContext(unitName = "helloworldPU")
+    private EntityManager em;
+
+    public String getGreeting(String type) {
+        TypedQuery<Hello> query = em.createQuery(
+            "SELECT h FROM Hello h WHERE h.service = :service", Hello.class);
+        query.setParameter("service", type);
+
+        try {
+            Hello result = query.setMaxResults(1).getSingleResult();
+            return result.getResponse();
+
+        } catch (NoResultException e) {
+            return "Service not found";
+        }
     }
 }

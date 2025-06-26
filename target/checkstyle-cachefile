@@ -1,5 +1,0 @@
-#Wed Jun 18 17:29:58 CEST 2025
-/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim/src/main/java/org/jboss/as/quickstarts/rshelloworld/RestApplication.java=1750257894000
-/home/splatas/repo/E42.LGIM/01.REPO/jboss-eap-quickstarts/helloworld-rs-lgim/src/main/java/org/jboss/as/quickstarts/rshelloworld/HelloWorld.java=1750260430000
-module-resource*?\:/wildfly-checkstyle/suppressions.xml=DD3FD5987C62C3034A4613F83C42B24683BCFC2E
-configuration*?=A41584AC58A1D08585DA00594E069AD1291E531E
