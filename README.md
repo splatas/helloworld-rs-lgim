@@ -221,7 +221,55 @@ configmap/jboss-cli created
 oc set volume deployment/helloworld-eap-lgim --add --name=jboss-cli -m /opt/eap/extensions -t configmap --configmap-name=jboss-cli --default-mode='0755' --overwrite
 ```
 
+3. Applying the changes
+Just delete current pod and changes should be applied:
 
+```shell
+oc get pods  (returns POD_NAME)
+oc delete pod POD_NAME
+```
+
+4. Verify logs
+You should see the following message "Running postconfigure" in new pod's log:
+```shell
+oc logs POD_NAME | grep "Running postconfigure"
+
+@---->>>> Running postconfigure.sh
+@---->>>> Running postconfigure.sh: END!!
+```
+
+This message means our configuration was applied.
+
+
+4. Verify DB connection
+You should see a new datasource defined in the JBOSS instance.
+Run the foollowing commands:
+
+```shell
+oc rsh POD_NAME
+
+sh-4.4$ $JBOSS_HOME/bin/jboss-cli.sh -c
+[standalone@localhost:9990 /] /subsystem=datasources/data-source=PostgresDS:test-connection-in-pool
+{
+    "outcome" => "success",
+    "result" => [true]
+}
+```
+
+If you receive this message ("outcome" => "success")  it implies your connection with PostgresDS's datasource is working ok.
+
+Extra verifications: datasource and driver created with ConfigMap 'jboss-cli'
+```shell
+[standalone@localhost:9990 /] ls -l /subsystem=datasources/data-source=
+PostgresDS     (<= your datasource)
+
+
+[standalone@localhost:9990 /] ls -l /subsystem=datasources/jdbc-driver=
+h2
+postgresql   (<= your DB driver)
+```
+
+--------------------------------
 REVISAR!!!
     Modify app Deployment to add a reference to ConfigMap and Secret previously created:
     ```yaml
