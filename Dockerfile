@@ -15,10 +15,5 @@ COPY ./drivers/postgresql-42.7.7.jar /opt/eap/drivers/postgresql-42.7.7.jar
 # Permissions needed for no-root users in OpenShift can access
 RUN chown -R jboss:root /opt/eap/standalone/deployments && chmod -R g+rw /opt/eap/standalone/deployments
 
-# DATABASE Drivers --------------------------------------------
-# COPY ./ocp/openshift-launch.sh /opt/eap/bin/
-# RUN chmod +x /opt/eap/bin/openshift-launch.sh
-# DATABASE Drivers --------------------------------------------    
-
-ENV splatas=basic-with-helloworldPU
+ENV splatas=basic-secured
 USER 185
