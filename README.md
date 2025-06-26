@@ -288,25 +288,116 @@ imagestream.image.openshift.io/helloworld-eap-lgim-db created
 oc start-build helloworld-eap-lgim-db --from-dir=. --follow
 ```
 
---------------------------------
-REVISAR!!!
-    Modify app Deployment to add a reference to ConfigMap and Secret previously created:
-    ```yaml
-        env:
-        - name: POSTGRESQL_USER
-            valueFrom:
-            secretKeyRef:
-                name: db-secret
-                key: DB_USER
-        - name: POSTGRESQL_PASSWORD
-            valueFrom:
-            secretKeyRef:
-                name: db-secret
-                key: DB_PASSWORD
-        - name: POSTGRESQL_DATABASE
-            valueFrom:
-            secretKeyRef:
-                name: postgresql
-                key: database-name
 
-    ```
+# Build app: SECURED VERSION
+
+New BuildConfig and ImageStream:
+```shell
+oc apply -f ocp/20.helloworld-eap-lgim-db-secured.is.yaml 
+imagestream.image.openshift.io/helloworld-eap-lgim-db-secured created
+
+oc apply -f ocp/21.helloworld-eap-lgim-db-secured.bc.yaml 
+buildconfig.build.openshift.io/helloworld-eap-lgim-db-secured created
+```
+
+Add users in JBOSS EAP (this should be include in 'jboss-cli' ConfigMap):
+```shell
+/opt/eap/bin/add-user.sh -a -u juan -p clave123 -g USER -s
+```
+
+Verify user and roles added:
+```shell
+cat /opt/eap/standalone/configuration/application-users.properties
+
+OUTPUT:
+# The following illustrates how an admin user could be defined, this
+# is for illustration only and does not correspond to a usable password.
+#
+#admin=2a0923285184943425d1f53ddd58ec7a
+juan=d7f6fcf77760e34e2e9225f64545d5e8
+```
+
+```shell
+cat /opt/eap/standalone/configuration/application-roles.properties
+
+OUTPUT:
+...
+# The following illustrates how an admin user could be defined.
+#
+#admin=PowerUser,BillingAdmin,
+#guest=guest
+juan=USER
+```
+
+
+```shell
+mvn clean install -Dcheckstyle.skip=true
+```
+
+```shell
+oc start-build helloworld-eap-lgim-db-secured --from-dir=. --follow
+```
+
+
+## Add this to 'jboss-cli' ConfigMap:
+```shell
+# Security #
+/subsystem=elytron/security-domain=ApplicationDomain:add(default-realm=ApplicationRealm, realms=[{realm=ApplicationRealm}], permission-mapper=default-permission-mapper)
+/subsystem=undertow/application-security-domain=other:add(security-domain=ApplicationDomain)
+```
+
+So, the configMap should looks like this:
+```shell
+...
+    password=$DB_PASSWORD, \
+    use-ccm=true,max-pool-size=20,blocking-timeout-wait-millis=5000,enabled=true \
+)
+
+# Security #
+/subsystem=elytron/security-domain=ApplicationDomain:add(default-realm=ApplicationRealm, realms=[{realm=ApplicationRealm}], permission-mapper=default-permission-mapper)
+/subsystem=undertow/application-security-domain=other:add(security-domain=ApplicationDomain)
+
+quit
+```
+
+## And set this content in 'jboss-web.xml' (/src/main/webapp/WEB-INF/jboss-web.xml):
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<jboss-web>
+    <security-domain>other</security-domain>
+</jboss-web>
+```
+
+## Dummy user:
+In order to test the authentication, we need to create a dummy user with 'add-user.sh' script in our JBOSS EAP instances.
+To persist this, we add the sentence to our 'postconfigure.sh' script (in 'jboss-cli' ConfigMap)
+
+```shell
+#!/usr/bin/env bash
+echo "@---->>>> Running postconfigure.sh"
+
+$JBOSS_HOME/bin/jboss-cli.sh --file=$JBOSS_HOME/extensions/extensions.cli
+
+# Add dummy user:
+/opt/eap/bin/add-user.sh -a -u john -p password123 -g USER -s
+
+echo "@---->>>> Running postconfigure.sh: END!!"
+```
+
+Finally we redeploy the application.
+
+When try the following endpoint "http://helloworld-eap-lgim-lgim-eap.apps.cluster-jh9xn.jh9xn.sandbox508.opentlc.com/helloworld-rs-lgim/secure"
+a pop-up should appears requesting user/password.
+
+If we indicate the credentials added in 'postconfigure.sh' then we should get a response like this:
+```shell
+USER: john  ==> Hello from SECURE service!
+```
+
+But if we try with "http://helloworld-eap-lgim-lgim-eap.apps.cluster-jh9xn.jh9xn.sandbox508.opentlc.com/helloworld-rs-lgim/public"
+the response should be: 
+```shell
+Hello from PUBLIC service!
+```
+
+(User is not required)
