@@ -196,40 +196,50 @@ IMPORTANT: Remember you have an Postgresql EPHEMERAL instance. So, if the POD is
 
 
 ## OCP objects to integrate the database
-Create objects with DB connection string:
 
-```shell
-oc apply -f 00.configure-datasource.yaml
-
-configmap/eap-datasource-config created
-```
-
-Create objects with DB cr   edentials:
+Create objects with DB credentials:
 ```shell
 oc apply -f 01.database-credentials.yaml 
 
 secret/db-secret created
 ```
 
-Modify app Deployment to add a reference to ConfigMap and Secret previously created:
-```yaml
-    env:
-    - name: POSTGRESQL_USER
-        valueFrom:
-        secretKeyRef:
-            name: db-secret
-            key: DB_USER
-    - name: POSTGRESQL_PASSWORD
-        valueFrom:
-        secretKeyRef:
-            name: db-secret
-            key: DB_PASSWORD
-    - name: POSTGRESQL_DATABASE
-        valueFrom:
-        secretKeyRef:
-            name: postgresql
-            key: database-name
+Create objects with DB connection string:
 
+References: https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/7.4/html-single/getting_started_with_jboss_eap_for_openshift_container_platform/index#custom_scripts
+
+1. Create configmap
+```shell
+oc create configmap jboss-cli --from-file=postconfigure.sh=extensions/postconfigure.sh --from-file=extensions.cli=extensions/extensions.cli
+
+OUTPUT:
+configmap/jboss-cli created
 ```
 
-DB_CONNECTION_STRING="jdbc:postgresql://${DB_SERVICE_HOST}:${DB_SERVICE_PORT}/${DB_NAME}"
+2. Mount the configmap into the pods via the deployment 
+```shell
+oc set volume deployment/helloworld-eap-lgim --add --name=jboss-cli -m /opt/eap/extensions -t configmap --configmap-name=jboss-cli --default-mode='0755' --overwrite
+```
+
+
+REVISAR!!!
+    Modify app Deployment to add a reference to ConfigMap and Secret previously created:
+    ```yaml
+        env:
+        - name: POSTGRESQL_USER
+            valueFrom:
+            secretKeyRef:
+                name: db-secret
+                key: DB_USER
+        - name: POSTGRESQL_PASSWORD
+            valueFrom:
+            secretKeyRef:
+                name: db-secret
+                key: DB_PASSWORD
+        - name: POSTGRESQL_DATABASE
+            valueFrom:
+            secretKeyRef:
+                name: postgresql
+                key: database-name
+
+    ```
