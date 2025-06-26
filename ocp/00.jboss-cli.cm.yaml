@@ -1,0 +1,37 @@
+apiVersion: v1
+data:
+  extensions.cli: "embed-server --std-out=echo  --server-config=standalone-openshift.xml\n\nset
+    DB_DRIVER_NAME=postgresql\nset DB_USERNAME=userYCR\nset DB_PASSWORD=22bvaR2dfuHW5weG\nset
+    DB_XA_DRIVER=org.postgresql.xa.PGXADataSource\nset DB_DRIVER_CLASS_NAME=org.postgresql.Driver\nset
+    DB_JDBC_URL=jdbc:postgresql://postgresql.lgim-eap.svc.cluster.local:5432/sampledb\nset
+    DB_EAP_MODULE=org.postgresql\nset DB_JNDI_NAME=java:/jdbc/PostgresDS\nset FILE=/opt/eap/drivers/postgresql-42.7.7.jar\n\nmodule
+    add --name=$DB_EAP_MODULE --resources=$FILE --dependencies=javax.api,javax.resource.api\n\n#
+    Add PostgreSQL driver \n/subsystem=datasources/jdbc-driver=$DB_DRIVER_NAME:add(
+    \\\n    driver-name=$DB_DRIVER_NAME, \\\n    driver-module-name=$DB_EAP_MODULE,
+    \\\n    driver-xa-datasource-class-name=$DB_XA_DRIVER \\        \n)\n\n# Add new
+    datasource\n#/subsystem=datasources/data-source=PostgresDS:add(jndi-name=,driver-name=postgresql,connection-url=jdbc:postgresql://postgresql.lgim-eap.svc.cluster.local:5432/sampledb,user-name=userYCR,password=22bvaR2dfuHW5weG,use-ccm=true,max-pool-size=20,blocking-timeout-wait-millis=5000,enabled=true)\n\n/subsystem=datasources/data-source=PostgresDS:add(
+    \\\n    jndi-name=$DB_JNDI_NAME, \\\n    use-java-context=true, \\\n    connection-url=$DB_JDBC_URL,
+    \\\n    driver-name=$DB_DRIVER_NAME, \\\n    user-name=$DB_USERNAME, \\\n    password=$DB_PASSWORD,
+    \\\n    use-ccm=true,max-pool-size=20,blocking-timeout-wait-millis=5000,enabled=true
+    \\\n)\n\n# Security #\n/subsystem=elytron/security-domain=ApplicationDomain:add(default-realm=ApplicationRealm,
+    realms=[{realm=ApplicationRealm}], permission-mapper=default-permission-mapper)\n/subsystem=undertow/application-security-domain=other:add(security-domain=ApplicationDomain)\n\nquit\n"
+  postconfigure.sh: |
+    #!/usr/bin/env bash
+    echo "@---->>>> Running postconfigure.sh"
+
+    $JBOSS_HOME/bin/jboss-cli.sh --file=$JBOSS_HOME/extensions/extensions.cli
+
+    # Add poc user:
+    /opt/eap/bin/add-user.sh -a -u john -p password123 -g USER -s
+
+    echo "@---->>>> Running postconfigure.sh: END!!"
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"extensions.cli":"embed-server --std-out=echo  --server-config=standalone-openshift.xml\n\nset DB_DRIVER_NAME=postgresql\nset DB_USERNAME=userYCR\nset DB_PASSWORD=22bvaR2dfuHW5weG\nset DB_XA_DRIVER=org.postgresql.xa.PGXADataSource\nset DB_DRIVER_CLASS_NAME=org.postgresql.Driver\nset DB_JDBC_URL=jdbc:postgresql://postgresql.lgim-eap.svc.cluster.local:5432/sampledb\nset DB_EAP_MODULE=org.postgresql\nset DB_JNDI_NAME=java:/jdbc/PostgresDS\nset FILE=/opt/eap/drivers/postgresql-42.7.7.jar\n\nmodule add --name=$DB_EAP_MODULE --resources=$FILE --dependencies=javax.api,javax.resource.api\n\n# Add PostgreSQL driver \n/subsystem=datasources/jdbc-driver=$DB_DRIVER_NAME:add( \\\n    driver-name=$DB_DRIVER_NAME, \\\n    driver-module-name=$DB_EAP_MODULE, \\\n    driver-xa-datasource-class-name=$DB_XA_DRIVER \\        \n)\n\n# Add new datasource\n#/subsystem=datasources/data-source=PostgresDS:add(jndi-name=,driver-name=postgresql,connection-url=jdbc:postgresql://postgresql.lgim-eap.svc.cluster.local:5432/sampledb,user-name=userYCR,password=22bvaR2dfuHW5weG,use-ccm=true,max-pool-size=20,blocking-timeout-wait-millis=5000,enabled=true)\n\n/subsystem=datasources/data-source=PostgresDS:add( \\\n    jndi-name=$DB_JNDI_NAME, \\\n    use-java-context=true, \\\n    connection-url=$DB_JDBC_URL, \\\n    driver-name=$DB_DRIVER_NAME, \\\n    user-name=$DB_USERNAME, \\\n    password=$DB_PASSWORD, \\\n    use-ccm=true,max-pool-size=20,blocking-timeout-wait-millis=5000,enabled=true \\\n)\n\nquit\n","postconfigure.sh":"#!/usr/bin/env bash\necho \"@----\u003e\u003e\u003e\u003e Running postconfigure.sh\"\n\n$JBOSS_HOME/bin/jboss-cli.sh --file=$JBOSS_HOME/extensions/extensions.cli\n\n# Add poc user:\n/opt/eap/bin/add-user.sh -a -u juan -p clave123 -g USER -s\n\necho \"@----\u003e\u003e\u003e\u003e Running postconfigure.sh: END!!\"\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"jboss-cli","namespace":"lgim-eap"}}
+  creationTimestamp: "2025-06-26T09:31:13Z"
+  name: jboss-cli
+  namespace: lgim-eap
+  resourceVersion: "4566697"
+  uid: e7061840-c558-4a85-81d2-e3134d22d786

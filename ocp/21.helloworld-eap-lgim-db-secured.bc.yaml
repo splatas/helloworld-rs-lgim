@@ -1,0 +1,35 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"build.openshift.io/v1","kind":"BuildConfig","metadata":{"annotations":{},"labels":{"build":"helloworld-eap-lgim"},"name":"helloworld-eap-lgim","namespace":"lgim-eap"},"spec":{"failedBuildsHistoryLimit":5,"nodeSelector":null,"output":{"to":{"kind":"ImageStreamTag","name":"helloworld-eap-lgim:latest"}},"postCommit":{},"resources":{},"runPolicy":"Serial","source":{"binary":{},"type":"Binary"},"strategy":{"dockerStrategy":{},"type":"Docker"},"successfulBuildsHistoryLimit":5,"triggers":[{"github":{"secret":"sUjSS9oMrC6RP6E2wgoC"},"type":"GitHub"},{"generic":{"secret":"44h_7hBlWSApzBC9NxaV"},"type":"Generic"}]}}
+    openshift.io/generated-by: OpenShiftNewBuild
+  labels:
+    build: helloworld-eap-lgim-db-secured
+  name: helloworld-eap-lgim-db-secured
+  namespace: lgim-eap
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: helloworld-eap-lgim-db-secured:latest
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    binary: {}
+    type: Binary
+  strategy:
+    dockerStrategy: {}
+    type: Docker
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - github:
+      secret: sUjSS9oMrC6RP6E2wgoC
+    type: GitHub
+  - generic:
+      secret: 44h_7hBlWSApzBC9NxaV
+    type: Generic
