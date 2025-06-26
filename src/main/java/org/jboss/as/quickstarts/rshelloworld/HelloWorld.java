@@ -37,7 +37,6 @@ import java.util.Optional;
 @Path("/")
 public class HelloWorld {
 
-    // ----------------------------- //
     @GET
     @Path("/public")
     @Produces(MediaType.TEXT_PLAIN)
@@ -50,8 +49,9 @@ public class HelloWorld {
     @Produces(MediaType.TEXT_PLAIN)
     @RolesAllowed("USER")
     public String secureEndpoint(@Context SecurityContext ctx) {
-      // return "user=" + ctx.getUserPrincipal().getName();
-      return getGreeting("secure");
+      String username = new String("USER: ").concat(ctx.getUserPrincipal().getName());
+      
+      return username.concat("  ==> " + getGreeting("secure"));
     }
 
     @PersistenceContext(unitName = "helloworldPU")
