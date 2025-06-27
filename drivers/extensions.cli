@@ -1,0 +1,39 @@
+embed-server --std-out=echo  --server-config=standalone-openshift.xml
+
+set DB_DRIVER_NAME=postgresql
+set DB_USERNAME=userYCR
+set DB_PASSWORD=22bvaR2dfuHW5weG
+set DB_XA_DRIVER=org.postgresql.xa.PGXADataSource
+set DB_DRIVER_CLASS_NAME=org.postgresql.Driver
+set DB_JDBC_URL=jdbc:postgresql://postgresql.lgim-eap.svc.cluster.local:5432/sampledb
+set DB_EAP_MODULE=org.postgresql
+set DB_JNDI_NAME=java:/jdbc/PostgresDS
+set FILE=/opt/eap/drivers/postgresql-42.7.7.jar
+
+module add --name=$DB_EAP_MODULE --resources=$FILE --dependencies=javax.api,javax.resource.api
+
+# Add PostgreSQL driver 
+/subsystem=datasources/jdbc-driver=$DB_DRIVER_NAME:add( \
+    driver-name=$DB_DRIVER_NAME, \
+    driver-module-name=$DB_EAP_MODULE, \
+    driver-xa-datasource-class-name=$DB_XA_DRIVER \        
+)
+
+# Add new datasource
+#/subsystem=datasources/data-source=PostgresDS:add(jndi-name=,driver-name=postgresql,connection-url=jdbc:postgresql://postgresql.lgim-eap.svc.cluster.local:5432/sampledb,user-name=userYCR,password=22bvaR2dfuHW5weG,use-ccm=true,max-pool-size=20,blocking-timeout-wait-millis=5000,enabled=true)
+
+/subsystem=datasources/data-source=PostgresDS:add( \
+    jndi-name=$DB_JNDI_NAME, \
+    use-java-context=true, \
+    connection-url=$DB_JDBC_URL, \
+    driver-name=$DB_DRIVER_NAME, \
+    user-name=$DB_USERNAME, \
+    password=$DB_PASSWORD, \
+    use-ccm=true,max-pool-size=20,blocking-timeout-wait-millis=5000,enabled=true \
+)
+
+# Security #
+/subsystem=elytron/security-domain=ApplicationDomain:add(default-realm=ApplicationRealm, realms=[{realm=ApplicationRealm}], permission-mapper=default-permission-mapper)
+/subsystem=undertow/application-security-domain=other:add(security-domain=ApplicationDomain)
+
+quit

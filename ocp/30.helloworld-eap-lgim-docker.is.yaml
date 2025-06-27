@@ -1,0 +1,10 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    build: helloworld-eap-lgim-docker
+  name: helloworld-eap-lgim-docker
+  namespace: lgim-eap
+spec:
+  lookupPolicy:
+    local: false
