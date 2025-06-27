@@ -8,12 +8,12 @@ USER 0
 COPY ./target/helloworld-rs-lgim.war /opt/eap/standalone/deployments/
 
 # DATABASE Drivers --------------------------------------------
-COPY ./drivers/postgresql-42.7.7.jar /opt/eap/drivers/postgresql-42.7.7.jar
+COPY ./extensions/postgresql-42.7.7.jar /opt/eap/extensions/postgresql-42.7.7.jar
 # DATABASE Drivers --------------------------------------------
 
 # JBOSS EAP customization --------------------------------------------
-COPY ./drivers/extensions.cli /opt/eap/extensions/extensions.cli
-COPY ./drivers/postconfigure.sh /opt/eap/extensions/postconfigure.sh
+COPY ./extensions/extensions.cli /opt/eap/extensions/extensions.cli
+COPY ./extensions/postconfigure.sh /opt/eap/extensions/postconfigure.sh
 
 RUN chown -R jboss:root /opt/eap/extensions && chmod -R g+rwx /opt/eap/extensions
 # JBOSS EAP customization --------------------------------------------
