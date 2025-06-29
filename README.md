@@ -1,25 +1,95 @@
 # Instructions
 
 ## Login en OpenShift
-oc login ...
-
-## Create a new project
-oc new-project lgim-eap
-
-## Create image from Dockerfile (access to registry.redhat.io is required)
 ```shell
-oc new-build --name=helloworld-eap-lgim --strategy=docker --binary --to=helloworld-eap-lgim:1.0
+oc login ...
+```
+
+## Create a new project: 
+Don't do it if you already have an assigned proyect (in that case run 'oc project PROJECT_NAME')
+
+```shell
+oc new-project lgim-eap
+```
+
+## Create an ImagesStrem and a BuilConfig for your custom image.
+```shell
+oc apply -f ./ocp/30.helloworld-eap-lgim-docker.is.yaml -n lgim-eap 
+```
+
+And then:
+```shell
+oc apply -f ./ocp/31.helloworld-eap-lgim-docker.bc -n lgim-eap 
 ```
 
 ```shell
 oc get bc
 NAME                          TYPE     FROM         LATEST
-helloworld-eap-lgim           Docker   Binary       2
+helloworld-eap-lgim-docker    Docker   Binary       2
 ```
 
-## Launch start-build with local folder (--from-dir=.) as reference
+
+**Just for reference**: another option is runnig the following command (access to registry.redhat.io is required)
+**DON'T RUN THIS COMMAND**
 ```shell
-oc start-build helloworld-eap-lgim --from-dir=. --follow
+oc new-build --name=helloworld-eap-lgim --strategy=docker --binary --to=helloworld-eap-lgim:1.0
+```
+**DON'T RUN THIS COMMAND**
+
+## Run the Maven command to create your app, running: 
+```shell
+mvn clean install -Dcheckstyle.skip=true
+```
+
+Now you should have a 'target' folder with you app file inside: 'helloworld-rs-lgim-sources.war'
+
+
+## Dockerfile
+Lets see the conent of our ./Dockerfile:
+
+```dockefile
+# Base official image of JBoss EAP 7.4 with OpenJDK8
+FROM registry.redhat.io/jboss-eap-7/eap74-openjdk8-openshift-rhel8:7.4.22-6
+
+# Temp user to copy files.
+USER 0
+
+# WAR file to be deployed in JBOSS
+COPY ./target/helloworld-rs-lgim.war /opt/eap/standalone/deployments/
+
+# DATABASE Drivers --------------------------------------------
+COPY ./extensions/postgresql-42.7.7.jar /opt/eap/extensions/postgresql-42.7.7.jar
+# DATABASE Drivers --------------------------------------------
+
+# JBOSS EAP customization --------------------------------------------
+COPY ./extensions/extensions.cli /opt/eap/extensions/extensions.cli
+COPY ./extensions/postconfigure.sh /opt/eap/extensions/postconfigure.sh
+
+RUN chown -R jboss:root /opt/eap/extensions && chmod -R g+rwx /opt/eap/extensions
+# JBOSS EAP customization --------------------------------------------
+
+# Permissions needed for no-root users in OpenShift can access
+RUN chown -R jboss:root /opt/eap/standalone/deployments && chmod -R g+rw /opt/eap/standalone/deployments
+
+USER 185
+```
+
+You can see that:
+- Base image is: registry.redhat.io/jboss-eap-7/eap74-openjdk8-openshift-rhel8:7.4.22-6
+- Our app file (.jar, .war or .ear) is in the right deployment folder: /opt/eap/standalone/deployments/
+- Driver for our database (not included in Base image) is in an specific folder '/opt/eap/extensions/': in this case 'postgresql-42.7.7.jar'
+- Two configuration files are included in the same folder: 'extensions.cli' (with jboss-cli instructions) and 'postconfigure.sh' is an script to apply the 'extensions.cli' in our instance of JBOSS EAP.
+    **Pay special attentiont on jboss-cli** where you can find all authentication details for our DB connection. You will need to apply the right information there, previuos to run 'start-build' command.
+- Some instructions to grant permissions
+
+
+## Launch start-build with local folder (--from-dir=.) as reference
+With this command you will launch the construction of our custom image in refernece of our BuildConfig(./ocp/31.helloworld-eap-lgim-docker.bc).
+The strategy of building is defined as 'Docker', so we provide our local ./Dockerfile to guide the construction.
+As a result we will have an ImageStream defined by ./ocp/30.helloworld-eap-lgim-docker.is.yaml: 'helloworld-eap-lgim-docker' 
+
+```shell
+oc start-build helloworld-eap-lgim-docker --from-dir=. --follow
 
 OUTPUT:
 Pulling image registry.redhat.io/jboss-eap-7/eap74-openjdk8-openshift-rhel8:7.4.22-6 ...
@@ -46,7 +116,7 @@ COMMIT temp.builder.openshift.io/lgim-eap/helloworld-eap-lgim-2:973ab850
 --> deeb4bfd3c8e
 Successfully tagged temp.builder.openshift.io/lgim-eap/helloworld-eap-lgim-2:973ab850
 deeb4bfd3c8e9ed98c8e3606d9df55eefd125c641d60458f29f58c29b8c256c6
-
+...
 Pushing image image-registry.openshift-image-registry.svc:5000/lgim-eap/helloworld-eap-lgim:1.0 ...
 Getting image source signatures
 Copying blob sha256:415b7206848ac1a6251d9884be87c9934f0a9bcb4028e81a9e83318cd603933b
@@ -59,41 +129,19 @@ Successfully pushed image-registry.openshift-image-registry.svc:5000/lgim-eap/he
 Push successful
 ```
 
+At this point you have an image based on 'eap74-openjdk8-openshift-rhel8:7.4.22-6' with your app and JBOSS EAP configuration included in your custom image.
+
 ```shell
 oc get is
-NAME                    IMAGE REPOSITORY                                                                        TAGS     UPDATED
-helloworld-eap-lgim     image-registry.openshift-image-registry.svc:5000/lgim-eap/helloworld-eap-lgim           1.0      13 minutes ago
+NAME                        IMAGE REPOSITORY                                                                        TAGS        UPDATED
+helloworld-eap-lgim-docker  image-registry.openshift-image-registry.svc:5000/lgim-eap/helloworld-eap-lgim-docker    latest,1.0  13 minutes ago
 ```
 
-## Create an app with the built image recently
+If you don't see a running pod, you should check the logs and the 'extensions.cli' file.
+
+## Create a Deployment with the image built recently
 ```shell
-oc new-app helloworld-eap-lgim:1.0
-
-OUTPUT:
---> Found image deeb4bf (15 minutes old) in image stream "lgim-eap/helloworld-eap-lgim" under tag "1.0" for "helloworld-eap-lgim:1.0"
-
-    JBoss EAP 7.4 
-    ------------- 
-    Platform for building and running JavaEE applications on JBoss EAP 7.4
-
-    Tags: builder, javaee, eap, eap7
-
-
---> Creating resources ...
-    deployment.apps "helloworld-eap-lgim" created
-    service "helloworld-eap-lgim" created
---> Success
-    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
-     'oc expose service/helloworld-eap-lgim' 
-    Run 'oc status' to view your app.
-```
-
-## Expose the service with a Route
-```shell
-oc expose svc/helloworld-eap-lgim
-
-OUTPUT:
-route.route.openshift.io/helloworld-eap-lgim exposed
+oc apply -f ./ocp/02.helloworld-eap-lgim.deployment.yaml
 ```
 
 ## Verification
@@ -111,24 +159,8 @@ NAME                                           HOST/PORT                        
 route.route.openshift.io/helloworld-eap-lgim   helloworld-eap-lgim-lgim-eap.apps.cluster-jh9xn.jh9xn.sandbox508.opentlc.com          helloworld-eap-lgim   8080-tcp                 None
 ```
 
-## Check the following curl command:
-```shell
-curl http://helloworld-eap-lgim-lgim-eap.apps.cluster-jh9xn.jh9xn.sandbox508.opentlc.com/helloworld-rs-lgim/public
-
-OUTPUT:
-public
-```
-
-```shell
-curl http://helloworld-eap-lgim-lgim-eap.apps.cluster-jh9xn.jh9xn.sandbox508.opentlc.com/helloworld-rs-lgim/secure
-
-OUTPUT:
-<html><head><title>Error</title></head><body>Internal Server Error</body></html>
-```
-
-Second curl command fails due to security questions.
-
 # Database integration
+For our testing we integrated our app with a local PostresSql database.
 
 ## First of all deploy a Postgresql (Ephemeral) DB fromm Openshift catalog.
 
@@ -145,7 +177,7 @@ postgresql://userYCR:22bvaR2dfuHW5weG@postgresql.lgim-eap.svc.cluster.local:5432
 
 JDBC: jdbc:postgresql://${DB_SERVICE_HOST}:${DB_SERVICE_PORT}/${DB_NAME}
 
-## Testing conecction from a pod with 'psql' tool:
+## Testing conection from a pod with 'psql' tool:
 ```shell
 psql -h postgresql -U userYCR -d sampledb
 
@@ -196,8 +228,8 @@ IMPORTANT: Remember you have an Postgresql EPHEMERAL instance. So, if the POD is
 
 
 ## OCP objects to integrate the database
-
 Create objects with DB credentials:
+
 ```shell
 oc apply -f 01.database-credentials.yaml 
 
@@ -208,7 +240,7 @@ Create objects with DB connection string:
 
 References: https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/7.4/html-single/getting_started_with_jboss_eap_for_openshift_container_platform/index#custom_scripts
 
-1. Create configmap
+1. Create configmap: **NOT MANDATORY (this configuration was included in Dockerfile as requested)**
 ```shell
 oc create configmap jboss-cli --from-file=postconfigure.sh=extensions/postconfigure.sh --from-file=extensions.cli=extensions/extensions.cli
 
@@ -216,7 +248,7 @@ OUTPUT:
 configmap/jboss-cli created
 ```
 
-2. Mount the configmap into the pods via the deployment 
+2. Mount the configmap into the pods via the deployment **NOT MANDATORY (this configuration was included in Dockerfile as requested)**
 ```shell
 oc set volume deployment/helloworld-eap-lgim --add --name=jboss-cli -m /opt/eap/extensions -t configmap --configmap-name=jboss-cli --default-mode='0755' --overwrite
 ```
@@ -269,19 +301,11 @@ h2
 postgresql   (<= your DB driver)
 ```
 
+# Rebuilding your app:
+If you need to apply some changes in your application code follow these steps:
 
-# Build app
 ```shell
 mvn clean install -Dcheckstyle.skip=true
-```
-
-New BuildConfig and ImageStream:
-```shell
-oc apply -f ocp/11.helloworld-eap-lgim-db.bc.yaml 
-buildconfig.build.openshift.io/helloworld-eap-lgim-db created
-
-oc apply -f ocp/11.helloworld-eap-lgim-db.is.yaml 
-imagestream.image.openshift.io/helloworld-eap-lgim-db created
 ```
 
 ```shell
@@ -289,23 +313,15 @@ oc start-build helloworld-eap-lgim-db --from-dir=. --follow
 ```
 
 
-# Build app: SECURED VERSION
+# Add users in JBOSS EAP (this should be include in 'jboss-cli' ConfigMap):
+According with last discussion, we included a dummy user just for testing our secured endpoints.
+**This instruction now is included in './ocp/postconfigure.sh' script**
 
-New BuildConfig and ImageStream:
 ```shell
-oc apply -f ocp/20.helloworld-eap-lgim-db-secured.is.yaml 
-imagestream.image.openshift.io/helloworld-eap-lgim-db-secured created
-
-oc apply -f ocp/21.helloworld-eap-lgim-db-secured.bc.yaml 
-buildconfig.build.openshift.io/helloworld-eap-lgim-db-secured created
+/opt/eap/bin/add-user.sh -a -u john -p password123 -g USER -s
 ```
 
-Add users in JBOSS EAP (this should be include in 'jboss-cli' ConfigMap):
-```shell
-/opt/eap/bin/add-user.sh -a -u juan -p clave123 -g USER -s
-```
-
-Verify user and roles added:
+Once the pod is runnig you can check this running cat's commands to verify user and roles added:
 ```shell
 cat /opt/eap/standalone/configuration/application-users.properties
 
@@ -314,7 +330,7 @@ OUTPUT:
 # is for illustration only and does not correspond to a usable password.
 #
 #admin=2a0923285184943425d1f53ddd58ec7a
-juan=d7f6fcf77760e34e2e9225f64545d5e8
+john=d7f6fcf77760e34e2e9225f64545d5e8
 ```
 
 ```shell
@@ -326,33 +342,13 @@ OUTPUT:
 #
 #admin=PowerUser,BillingAdmin,
 #guest=guest
-juan=USER
+john=USER
 ```
 
+## Add Security configuration to 'jboss-cli' ConfigMap:
+Again this configuration is included in './ocp/extensions.cli' file as requested
 
 ```shell
-mvn clean install -Dcheckstyle.skip=true
-```
-
-```shell
-oc start-build helloworld-eap-lgim-db-secured --from-dir=. --follow
-```
-
-
-## Add this to 'jboss-cli' ConfigMap:
-```shell
-# Security #
-/subsystem=elytron/security-domain=ApplicationDomain:add(default-realm=ApplicationRealm, realms=[{realm=ApplicationRealm}], permission-mapper=default-permission-mapper)
-/subsystem=undertow/application-security-domain=other:add(security-domain=ApplicationDomain)
-```
-
-So, the configMap should looks like this:
-```shell
-...
-    password=$DB_PASSWORD, \
-    use-ccm=true,max-pool-size=20,blocking-timeout-wait-millis=5000,enabled=true \
-)
-
 # Security #
 /subsystem=elytron/security-domain=ApplicationDomain:add(default-realm=ApplicationRealm, realms=[{realm=ApplicationRealm}], permission-mapper=default-permission-mapper)
 /subsystem=undertow/application-security-domain=other:add(security-domain=ApplicationDomain)
@@ -360,7 +356,7 @@ So, the configMap should looks like this:
 quit
 ```
 
-## And set this content in 'jboss-web.xml' (/src/main/webapp/WEB-INF/jboss-web.xml):
+## This content is included in 'jboss-web.xml' (/src/main/webapp/WEB-INF/jboss-web.xml):
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <jboss-web>
@@ -368,7 +364,7 @@ quit
 </jboss-web>
 ```
 
-## Dummy user:
+## Dummy user: this was applied previously (NOT NEEDED)
 In order to test the authentication, we need to create a dummy user with 'add-user.sh' script in our JBOSS EAP instances.
 To persist this, we add the sentence to our 'postconfigure.sh' script (in 'jboss-cli' ConfigMap)
 
