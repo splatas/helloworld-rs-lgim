@@ -4,7 +4,7 @@ metadata:
   labels:
     build: helloworld-eap-lgim-db
   name: helloworld-eap-lgim-db
-  namespace: lgim-eap
+  #namespace: lgim-eap
 spec:
   lookupPolicy:
     local: false

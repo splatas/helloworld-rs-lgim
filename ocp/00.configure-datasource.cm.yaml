@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: eap-datasource-config
-  namespace: lgim-eap
+  #namespace: lgim-eap
 data:
   configure-ds.cli: |
     embed-server --server-config=standalone-openshift.xml --std-out=echo 

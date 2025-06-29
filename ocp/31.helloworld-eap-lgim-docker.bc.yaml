@@ -8,7 +8,7 @@ metadata:
   labels:
     build: helloworld-eap-lgim-docker
   name: helloworld-eap-lgim-docker
-  namespace: lgim-eap
+  #namespace: lgim-eap
 spec:
   failedBuildsHistoryLimit: 5
   nodeSelector: null
